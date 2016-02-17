@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>New Shiny Features</title>
+  <meta name="description" content="">
+  <meta name="author" content="Alex Shum">
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="libraries/frameworks/revealjs/css/reveal.min.css">
+  <link rel="stylesheet" href="libraries/frameworks/revealjs/css/theme/default.css" id="theme">
+  <link rel="stylesheet" href="libraries/highlighters/highlight.js/css/tomorrow.css" id="theme">
+  <!--[if lt IE 9]>
+  <script src="lib/js/html5shiv.js"></script>
+  <![endif]-->  
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section class='' data-state='' id='slide-1'>
+  <h2>Shiny Developer&#39;s Conference</h2>
+  <p>Alex Shum</p>
+
+<p>February 17, 2016</p>
+
+</section>
+<section class='' data-state='' id='slide-2'>
+  <h2>Shiny: New Features</h2>
+  <ul>
+<li>Dashboards</li>
+<li>Functional programming and reactives</li>
+<li>Shiny Modules</li>
+<li>HTML Templates</li>
+<li>Other</li>
+</ul>
+
+</section>
+<section>
+   <section class='' data-state=''>
+    <h2>Dashboard features</h2>
+    <ul>
+<li>Notifications</li>
+</ul>
+
+<p><img src="https://rstudio.github.io/shinydashboard/images/menu-notifications.png" alt=""></p>
+
+<ul>
+<li>Task/progress bars</li>
+</ul>
+
+<p><img src="https://rstudio.github.io/shinydashboard/images/menu-tasks.png" alt=""></p>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <ul>
+<li>infoboxes</li>
+</ul>
+
+<p><img src="https://rstudio.github.io/shinydashboard/images/body-infoboxes.png" alt=""></p>
+
+<ul>
+<li>valueboxes</li>
+</ul>
+
+<p><img src="https://rstudio.github.io/shinydashboard/images/body-valueboxes.png" alt=""></p>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <pre><code class="r">ui &lt;- dashboardPage(
+  dashboardHeader(
+    title = &quot;Basic dashboard&quot;,
+    dropdownMenu(type = &quot;messages&quot;,
+      messageItem(
+        from = &quot;Sales Dept&quot;,
+        message = &quot;Sales are steady this month.&quot;
+      ),
+      messageItem(
+        from = &quot;New User&quot;,
+        message = &quot;How do I register?&quot;,
+        icon = icon(&quot;question&quot;),
+        time = &quot;13:45&quot;
+      ),
+      messageItem(
+        from = &quot;Support&quot;,
+        message = &quot;The new server is ready.&quot;,
+        icon = icon(&quot;life-ring&quot;),
+        time = &quot;2014-12-01&quot;
+      )
+    )
+  ),
+  dashboardSidebar(),
+  dashboardBody(
+    # Boxes need to be put in a row (or column)
+    fluidRow(
+      box(plotOutput(&quot;plot1&quot;, height = 250)),
+
+      box(
+        title = &quot;Controls&quot;,
+        sliderInput(&quot;slider&quot;, &quot;Number of observations:&quot;, 1, 100, 50)
+      )
+    )
+  )
+)
+</code></pre>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <pre><code class="r">server &lt;- function(input, output) {
+  histdata &lt;- rnorm(500)
+
+  output$plot1 &lt;- renderPlot({
+    data &lt;- histdata[seq_len(input$slider)]
+    hist(data)
+  })
+}
+</code></pre>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+</section>
+<section>
+   <section class='' data-state=''>
+    <h2>Reactive programming</h2>
+    <ul>
+<li>Reactive expressions are basically functions with caching.</li>
+<li>Use a reactive expression when you would use a function in base R.</li>
+<li>Reactive expressions update when inputs change.</li>
+<li>Reactive expressions cache results!</li>
+</ul>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <h2>Functional programming and side effects.</h2>
+
+<ul>
+<li>A function that modifies the state outside the function.</li>
+<li>Pure functions return a value and make no changes to the outside state.</li>
+<li>Reasoning through code is easier with pure functions.<br></li>
+<li>Reactive expressions are basically functions: avoid side effects</li>
+</ul>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <pre><code class="r">#incorrect 
+data &lt;- reactive({
+  x = slow(head(x_data, input$obs))
+  y = head(y_data, input$obs)
+  df = data.frame(x = x, y = y)
+
+  output$table &lt;- renderTable({
+    df
+  })
+
+  df
+})
+</code></pre>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <pre><code class="r">#correct
+data &lt;- reactive({
+  x = slow(head(x_data, input$obs))
+  y = head(y_data, input$obs)
+  data.frame(x = x, y = y)
+})  
+
+output$table &lt;- renderTable({
+  data()
+})
+</code></pre>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+</section>
+<section>
+   <section class='' data-state=''>
+    <h2>Shiny Modules</h2>
+    <ul>
+<li>Modularize shiny code</li>
+<li>Wrap UI elements in a function</li>
+<li>New functionality to insure namespace uniqueness of input/output IDs</li>
+</ul>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <pre><code class="r"># Module UI function
+csvFileInput &lt;- function(id, label = &quot;CSV file&quot;) {
+  # Create a namespace function using the provided id
+  ns &lt;- NS(id)
+
+  tagList(
+    fileInput(ns(&quot;file&quot;), label),
+    checkboxInput(ns(&quot;heading&quot;), &quot;Has heading&quot;),
+    selectInput(ns(&quot;quote&quot;), &quot;Quote&quot;, c(
+      &quot;None&quot; = &quot;&quot;,
+      &quot;Double quote&quot; = &quot;\&quot;&quot;,
+      &quot;Single quote&quot; = &quot;&#39;&quot;
+    ))
+  )
+}
+</code></pre>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <pre><code class="r"># Module server function
+csvFile &lt;- function(input, output, session, stringsAsFactors) {
+  userFile &lt;- reactive({
+    validate(need(input$file, message = FALSE))
+    input$file
+  })
+
+  dataframe &lt;- reactive({
+    read.csv(userFile()$datapath,
+      header = input$heading,
+      quote = input$quote,
+      stringsAsFactors = stringsAsFactors)
+  })
+
+  observe({
+    msg &lt;- sprintf(&quot;File %s was uploaded&quot;, userFile()$name)
+    cat(msg, &quot;\n&quot;)
+  })
+
+  # Return the reactive that yields the data frame
+  return(dataframe)
+}
+</code></pre>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <pre><code class="r">server &lt;- function(input, output, session) {
+  datafile &lt;- callModule(csvFile, &quot;datafile&quot;,
+    stringsAsFactors = FALSE)
+
+  output$table &lt;- renderDataTable({
+    datafile()
+  })
+}
+
+shinyApp(ui, server)
+</code></pre>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <pre><code class="r">ui &lt;- fluidPage(
+  sidebarLayout(
+    sidebarPanel(
+      csvFileInput(&quot;datafile&quot;, &quot;User data (.csv format)&quot;)
+    ),
+    mainPanel(
+      dataTableOutput(&quot;table&quot;)
+    )
+  )
+)
+</code></pre>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+</section>
+<section>
+   <section class='' data-state=''>
+    <h2>Shiny Default UI</h2>
+    <ul>
+<li>User interface built in R uses bootstrap.</li>
+<li>Sensible defaults but limited functionality.</li>
+<li><code>fluidPage</code> creates a bootstrap 12-column layout
+
+<ul>
+<li><code>fluidRow</code> and <code>column</code> correspond to <code>&lt;div-class=&quot;row&quot;&gt;</code> and <code>&lt;div class=&quot;col-&quot;&gt;</code> in bootstrap</li>
+</ul></li>
+<li><code>sidebarLayout</code> premade template with a 4-column sidebarPanel and 8-column mainPanel.</li>
+</ul>
+
+<pre><code class="r">shinyUI(fluidPage(
+  titlePanel(&quot;title panel&quot;),
+
+  sidebarLayout(
+    sidebarPanel( &quot;sidebar panel&quot;),
+    mainPanel(&quot;main panel&quot;)
+  )
+))
+</code></pre>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <h2>HTML Templates</h2>
+
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;!-- template.html --&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    {\{ headContent() }\}
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div&gt;
+      {\{ button }\}
+      {\{ slider }\}
+   &lt;/div&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+   <section class='' data-state=''>
+    <h2>HTML Template from Shiny</h2>
+
+<pre><code class="r">htmlTemplate(&quot;template.html&quot;,
+  button = actionButton(&quot;action&quot;, &quot;Action&quot;),
+  slider = sliderInput(&quot;x&quot;, &quot;X&quot;, 1, 100, 50)
+)
+</code></pre>
+
+    <aside class='notes'>
+      
+    </aside>
+   </section>
+</section>
+<section class='' data-state='' id='slide-7'>
+  <h2>Other new features</h2>
+  <ul>
+<li>Easy deployment through shinyapps.io</li>
+<li>Shiny gadgets: apps packaged as functions that will return a value to the caller.</li>
+<li>Grid Style sheet layout for shiny apps.</li>
+<li>DataTable javascript library native compatability in shiny.</li>
+<li>New debugging and profiling tools.</li>
+</ul>
+
+</section>
+<section class='' data-state='' id='slide-8'>
+  <h2>END</h2>
+  
+</section>
+    </div>
+  </div>
+</body>
+  <script src="libraries/frameworks/revealjs/lib/js/head.min.js"></script>
+  <script src="libraries/frameworks/revealjs/js/reveal.min.js"></script>
+  <script>
+  // Full list of configuration options available here:
+  // https://github.com/hakimel/reveal.js#configuration
+  Reveal.initialize({
+    controls: true,
+    progress: true,
+    history: true,
+    center: true,
+    theme: Reveal.getQueryHash().theme || 'default', 
+    transition: Reveal.getQueryHash().transition || 'default', 
+    dependencies: [
+    // Cross-browser shim that fully implements classList -
+    // https://github.com/eligrey/classList.js/
+      { src: 'libraries/frameworks/revealjs/lib/js/classList.js', condition: function() { return !document.body.classList;}},
+      // Zoom in and out with Alt+click
+      { src: 'libraries/frameworks/revealjs/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+      // Speaker notes
+      { src: 'libraries/frameworks/revealjs/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+      // Remote control your reveal.js presentation using a touch device
+      //{ src: 'libraries/frameworks/revealjs/plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+      ]
+  });
+  </script>  <!-- MathJax: Fall back to local if CDN offline but local image fonts are not supported (saves >100MB) -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [['$','$'], ['\\(','\\)']],
+      processEscapes: true
+    }
+  });
+</script>
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/2.0-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<!-- <script src="https://c328740.ssl.cf1.rackcdn.com/mathjax/2.0-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script> -->
+<script>window.MathJax || document.write('<script type="text/x-mathjax-config">MathJax.Hub.Config({"HTML-CSS":{imageFont:null}});<\/script><script src="libraries/widgets/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"><\/script>')
+</script>
+<!-- LOAD HIGHLIGHTER JS FILES -->
+<script src="libraries/highlighters/highlight.js/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+<!-- DONE LOADING HIGHLIGHTER JS FILES -->
+ 
+
+</html>
